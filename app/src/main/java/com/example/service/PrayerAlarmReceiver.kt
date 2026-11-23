@@ -3,9 +3,11 @@ package com.example.service
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.os.PowerManager
 import androidx.core.content.ContextCompat
 import com.example.data.local.AthanDatabase
 import com.example.data.repository.AthanRepository
+import com.example.domain.model.MuezzinVoice
 import com.example.domain.model.NotificationMode
 import com.example.domain.model.PrayerType
 import kotlinx.coroutines.CoroutineScope
@@ -16,6 +18,14 @@ class PrayerAlarmReceiver : BroadcastReceiver() {
 
   override fun onReceive(context: Context, intent: Intent) {
     val pendingResult = goAsync()
+    val pm = context.getSystemService(Context.POWER_SERVICE) as? PowerManager
+    val wakeLock = runCatching {
+      pm?.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "Athan:AlarmReceiverLock")?.apply {
+        setReferenceCounted(false)
+        acquire(25_000L)
+      }
+    }.getOrNull()
+
     CoroutineScope(Dispatchers.IO).launch {
       try {
         val db = AthanDatabase.getInstance(context)
@@ -38,7 +48,28 @@ class PrayerAlarmReceiver : BroadcastReceiver() {
                   putExtra(AdhanPlaybackService.EXTRA_VOICE_ID, settings.muezzinVoiceId)
                   putExtra(AdhanPlaybackService.EXTRA_CUSTOM_URI, settings.customAudioUri)
                 }
-                ContextCompat.startForegroundService(context, serviceIntent)
+                val startedService = runCatching {
+                  ContextCompat.startForegroundService(context, serviceIntent)
+                }.isSuccess
+
+                if (!startedService) {
+                  // Fallback when OS blocks background FGS start (e.g. exact alarm permission not granted yet)
+                  NotificationHelper.showFallbackAdhanNotification(
+                    context = context,
+                    prayerOrdinal = prayer.ordinal,
+                    prayerNameAr = prayer.arabicName,
+                    cityNameAr = settings.cityNameAr,
+                  )
+                  AdhanAudioController.play(
+                    context = context,
+                    prayerNameAr = prayer.arabicName,
+                    mode = mode,
+                    voice = MuezzinVoice.fromId(settings.muezzinVoiceId),
+                    customAudioUri = settings.customAudioUri,
+                    isPreview = false,
+                    fromService = true,
+                  )
+                }
               }
               NotificationMode.VIBRATE -> {
                 AdhanAudioController.triggerPrayerVibration(context)
@@ -77,6 +108,7 @@ class PrayerAlarmReceiver : BroadcastReceiver() {
         // Always reschedule upcoming prayers
         PrayerAlarmScheduler.scheduleAll(context, settings)
       } finally {
+        runCatching { if (wakeLock?.isHeld == true) wakeLock.release() }
         pendingResult.finish()
       }
     }

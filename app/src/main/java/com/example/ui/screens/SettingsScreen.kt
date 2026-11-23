@@ -85,6 +85,7 @@ fun SettingsScreen(
   onSelectMuezzinVoice: (MuezzinVoice) -> Unit,
   onCustomAudioSelected: (Uri) -> Unit,
   onPreviewAdhan: () -> Unit,
+  onTestAdhanService: () -> Unit,
   onStopAdhan: () -> Unit,
   onTogglePreAdhanReminder: (Boolean) -> Unit,
   onSelectThemeMode: (ThemeMode) -> Unit,
@@ -184,6 +185,9 @@ fun SettingsScreen(
           isDark = isDark,
           onTogglePlay = {
             if (uiState.adhanPlayback.isPlaying) onStopAdhan() else onPreviewAdhan()
+          },
+          onTestAlarmService = {
+            if (uiState.adhanPlayback.isPlaying) onStopAdhan() else onTestAdhanService()
           },
           modifier = Modifier.testTag("settings_preview_adhan_button"),
         )

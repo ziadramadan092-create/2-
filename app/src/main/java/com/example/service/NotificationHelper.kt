@@ -5,6 +5,8 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.media.AudioAttributes
+import android.net.Uri
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
@@ -13,6 +15,7 @@ import com.example.R
 
 object NotificationHelper {
   const val ADHAN_CHANNEL_ID = "athan_playback_channel"
+  const val ADHAN_FALLBACK_CHANNEL_ID = "athan_fallback_sound_channel"
   const val REMINDER_CHANNEL_ID = "prayer_reminder_channel"
   const val ADHAN_NOTIFICATION_ID = 1001
   const val REMINDER_BASE_NOTIFICATION_ID = 2000
@@ -32,6 +35,23 @@ object NotificationHelper {
       lockscreenVisibility = NotificationCompat.VISIBILITY_PUBLIC
     }
 
+    val soundUri = Uri.parse("android.resource://${context.packageName}/${R.raw.adhan_makkah}")
+    val alarmAttrs = AudioAttributes.Builder()
+      .setUsage(AudioAttributes.USAGE_ALARM)
+      .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+      .build()
+
+    val fallbackChannel = NotificationChannel(
+      ADHAN_FALLBACK_CHANNEL_ID,
+      context.getString(R.string.adhan_channel_name),
+      NotificationManager.IMPORTANCE_HIGH,
+    ).apply {
+      description = context.getString(R.string.adhan_channel_desc)
+      setSound(soundUri, alarmAttrs)
+      enableVibration(true)
+      lockscreenVisibility = NotificationCompat.VISIBILITY_PUBLIC
+    }
+
     val reminderChannel = NotificationChannel(
       REMINDER_CHANNEL_ID,
       context.getString(R.string.reminder_channel_name),
@@ -44,6 +64,7 @@ object NotificationHelper {
     }
 
     manager.createNotificationChannel(adhanChannel)
+    manager.createNotificationChannel(fallbackChannel)
     manager.createNotificationChannel(reminderChannel)
   }
 
@@ -74,7 +95,7 @@ object NotificationHelper {
     )
 
     return NotificationCompat.Builder(context, ADHAN_CHANNEL_ID)
-      .setSmallIcon(R.drawable.ic_launcher_foreground)
+      .setSmallIcon(R.drawable.ic_stat_adhan)
       .setContentTitle("حان الآن موعد صلاة $prayerNameAr")
       .setContentText("توقيت $cityNameAr • اضغط لإيقاف الأذان")
       .setPriority(NotificationCompat.PRIORITY_MAX)
@@ -88,6 +109,43 @@ object NotificationHelper {
         stopPending,
       )
       .build()
+  }
+
+  fun showFallbackAdhanNotification(
+    context: Context,
+    prayerOrdinal: Int,
+    prayerNameAr: String,
+    cityNameAr: String,
+  ) {
+    ensureChannels(context)
+    val openAppIntent = Intent(context, MainActivity::class.java).apply {
+      flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+    }
+    val openAppPending = PendingIntent.getActivity(
+      context,
+      prayerOrdinal + 400,
+      openAppIntent,
+      PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+    )
+
+    val soundUri = Uri.parse("android.resource://${context.packageName}/${R.raw.adhan_makkah}")
+
+    val notification = NotificationCompat.Builder(context, ADHAN_FALLBACK_CHANNEL_ID)
+      .setSmallIcon(R.drawable.ic_stat_adhan)
+      .setContentTitle("حان الآن موعد صلاة $prayerNameAr")
+      .setContentText("توقيت $cityNameAr • افتح التطبيق لإدارة التنبيهات")
+      .setPriority(NotificationCompat.PRIORITY_MAX)
+      .setCategory(NotificationCompat.CATEGORY_ALARM)
+      .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+      .setSound(soundUri)
+      .setAutoCancel(true)
+      .setContentIntent(openAppPending)
+      .build()
+
+    runCatching {
+      NotificationManagerCompat.from(context)
+        .notify(ADHAN_NOTIFICATION_ID, notification)
+    }
   }
 
   fun showPrayerReminderNotification(
@@ -115,7 +173,7 @@ object NotificationHelper {
     }
 
     val notification = NotificationCompat.Builder(context, REMINDER_CHANNEL_ID)
-      .setSmallIcon(R.drawable.ic_launcher_foreground)
+      .setSmallIcon(R.drawable.ic_stat_adhan)
       .setContentTitle("حان الآن وقت صلاة $prayerNameAr")
       .setContentText(subtitle)
       .setPriority(NotificationCompat.PRIORITY_HIGH)
@@ -148,7 +206,7 @@ object NotificationHelper {
     )
 
     val notification = NotificationCompat.Builder(context, REMINDER_CHANNEL_ID)
-      .setSmallIcon(R.drawable.ic_launcher_foreground)
+      .setSmallIcon(R.drawable.ic_stat_adhan)
       .setContentTitle("اقترب موعد صلاة $prayerNameAr")
       .setContentText("متبقي ١٥ دقيقة على الأذان • $cityNameAr")
       .setPriority(NotificationCompat.PRIORITY_HIGH)

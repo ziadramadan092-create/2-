@@ -68,8 +68,16 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
   private val repo = app.repository
 
   private val _isDetectingGps = MutableStateFlow(false)
-  private val _events = MutableSharedFlow<String>()
+  private val _events = MutableSharedFlow<String>(extraBufferCapacity = 8)
   val events = _events.asSharedFlow()
+
+  init {
+    viewModelScope.launch {
+      AdhanAudioController.errors.collect { err ->
+        _events.emit(err)
+      }
+    }
+  }
 
   private val tickerFlow = flow {
     while (true) {
@@ -356,7 +364,21 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
       voice = s.muezzinVoice(),
       customAudioUri = s.customAudioUri,
       isPreview = true,
+      fromService = false,
     )
+  }
+
+  fun testAdhanAlarmService(context: Context) {
+    val s = uiState.value.settings
+    val serviceIntent = Intent(context, com.example.service.AdhanPlaybackService::class.java).apply {
+      action = com.example.service.AdhanPlaybackService.ACTION_START_ADHAN
+      putExtra(com.example.service.AdhanPlaybackService.EXTRA_PRAYER_NAME_AR, uiState.value.nextPrayer.arabicName)
+      putExtra(com.example.service.AdhanPlaybackService.EXTRA_CITY_NAME_AR, s.cityNameAr)
+      putExtra(com.example.service.AdhanPlaybackService.EXTRA_MODE_ID, NotificationMode.FULL_ADHAN.id)
+      putExtra(com.example.service.AdhanPlaybackService.EXTRA_VOICE_ID, s.muezzinVoiceId)
+      putExtra(com.example.service.AdhanPlaybackService.EXTRA_CUSTOM_URI, s.customAudioUri)
+    }
+    androidx.core.content.ContextCompat.startForegroundService(context, serviceIntent)
   }
 
   fun stopAdhan(context: Context) {

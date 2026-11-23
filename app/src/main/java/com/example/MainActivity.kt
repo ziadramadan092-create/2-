@@ -2,6 +2,7 @@ package com.example
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.media.AudioManager
 import android.os.Build
 import android.os.Bundle
 import android.view.KeyEvent
@@ -85,6 +86,7 @@ class MainActivity : ComponentActivity() {
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
+    volumeControlStream = AudioManager.STREAM_MUSIC
     enableEdgeToEdge()
     setContent {
       val viewModel: MainViewModel = viewModel()
@@ -261,6 +263,11 @@ fun AthanAppRoot(viewModel: MainViewModel) {
                     onCyclePrayerMode = { viewModel.cyclePrayerMode(it) },
                     onToggleThemeQuick = { viewModel.toggleThemeQuick(it) },
                     onOpenSettingsTab = { currentTab = MainTab.SETTINGS },
+                    onRequestNotificationPermission = {
+                      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                      }
+                    },
                   )
                   MainTab.QIBLA -> QiblaScreen(
                     uiState = uiState,
@@ -286,6 +293,7 @@ fun AthanAppRoot(viewModel: MainViewModel) {
                     onSelectMuezzinVoice = { viewModel.setMuezzinVoice(it) },
                     onCustomAudioSelected = { viewModel.setCustomAudioUri(context, it) },
                     onPreviewAdhan = { viewModel.previewAdhan(context) },
+                    onTestAdhanService = { viewModel.testAdhanAlarmService(context) },
                     onStopAdhan = { viewModel.stopAdhan(context) },
                     onTogglePreAdhanReminder = { viewModel.setPreAdhanReminder(it) },
                     onSelectThemeMode = { viewModel.setThemeMode(it) },

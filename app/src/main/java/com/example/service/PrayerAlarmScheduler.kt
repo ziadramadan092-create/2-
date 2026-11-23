@@ -89,7 +89,11 @@ object PrayerAlarmScheduler {
       )
       val preTrigger = triggerAt - 15 * 60_000L
       if (settings.preAdhanReminderEnabled && preTrigger > now + 2_000L) {
-        alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, preTrigger, prePending)
+        if (canScheduleExactAlarms(context)) {
+          alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, preTrigger, prePending)
+        } else {
+          alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, preTrigger, prePending)
+        }
       } else {
         alarmManager.cancel(prePending)
       }

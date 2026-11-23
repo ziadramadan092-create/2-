@@ -60,6 +60,20 @@ import com.example.ui.components.GlassCard
 import com.example.ui.components.GlassCircleIconButton
 import com.example.ui.components.drawIslamicMandalaRosette
 import com.example.ui.components.isAppInDarkTheme
+import android.Manifest
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.net.Uri
+import android.os.Build
+import android.provider.Settings
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.ContextCompat
+import com.example.service.PrayerAlarmScheduler
 import com.example.ui.theme.Cerulean4
 import com.example.ui.theme.Cobalt6
 import com.example.ui.theme.RoyalAzure7
@@ -73,9 +87,18 @@ fun HomeScreen(
   onCyclePrayerMode: (PrayerType) -> Unit,
   onToggleThemeQuick: (Boolean) -> Unit,
   onOpenSettingsTab: () -> Unit,
+  onRequestNotificationPermission: () -> Unit = {},
   modifier: Modifier = Modifier,
 ) {
+  val context = LocalContext.current
   val isDark = isAppInDarkTheme(uiState.settings.themeMode())
+  val hasPostNotif = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+    ContextCompat.checkSelfPermission(
+      context,
+      Manifest.permission.POST_NOTIFICATIONS,
+    ) == PackageManager.PERMISSION_GRANTED
+  val hasExactAlarm = PrayerAlarmScheduler.canScheduleExactAlarms(context)
+  var dismissedPermissionBanner by remember { mutableStateOf(false) }
 
   LazyColumn(
     modifier = modifier.fillMaxSize(),
@@ -151,6 +174,65 @@ fun HomeScreen(
               tint = MaterialTheme.colorScheme.primary,
               modifier = Modifier.testTag("quick_notif_settings"),
             )
+          }
+        }
+      }
+    }
+
+    // 1b. Optional Background Audio & Exact Alarm Permission Helper
+    if ((!hasPostNotif || !hasExactAlarm) && !dismissedPermissionBanner) {
+      item {
+        GlassCard(
+          isDark = isDark,
+          cornerRadius = 18.dp,
+          modifier = Modifier
+            .widthIn(max = 640.dp)
+            .fillMaxWidth()
+            .testTag("home_permission_warning_card"),
+        ) {
+          Row(
+            modifier = Modifier
+              .fillMaxWidth()
+              .padding(horizontal = 14.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+          ) {
+            Column(modifier = Modifier.weight(1f)) {
+              Text(
+                text = "تفعيل أذونات الأذان في الخلفية",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.tertiary,
+              )
+              Text(
+                text = if (!hasPostNotif) {
+                  "اسمح بالإشعارات لتشغيل الأذان عند دخول وقت الصلاة"
+                } else {
+                  "فعّل المنبه الدقيق ليعمل الأذان في موعده تماماً والشاشة مغلقة"
+                },
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+              )
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+              TextButton(
+                onClick = {
+                  if (!hasPostNotif) {
+                    onRequestNotificationPermission()
+                  } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    val intent = Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).apply {
+                      data = Uri.parse("package:${context.packageName}")
+                    }
+                    runCatching { context.startActivity(intent) }
+                  }
+                },
+              ) {
+                Text("تفعيل")
+              }
+              TextButton(onClick = { dismissedPermissionBanner = true }) {
+                Text("لاحقاً")
+              }
+            }
           }
         }
       }

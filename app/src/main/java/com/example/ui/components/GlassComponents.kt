@@ -41,9 +41,11 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.material3.OutlinedButton
 import com.example.domain.model.ThemeMode
 import com.example.ui.theme.Cerulean4
 import com.example.ui.theme.Cobalt6
@@ -284,6 +286,7 @@ fun AudioPreviewWaveformCard(
   isDark: Boolean,
   onTogglePlay: () -> Unit,
   modifier: Modifier = Modifier,
+  onTestAlarmService: (() -> Unit)? = null,
 ) {
   GlassCard(
     isDark = isDark,
@@ -363,7 +366,8 @@ fun AudioPreviewWaveformCard(
           modifier = Modifier
             .size(50.dp)
             .clip(CircleShape)
-            .clickable(onClick = onTogglePlay),
+            .clickable(onClick = onTogglePlay)
+            .testTag("settings_preview_adhan_play_button"),
         ) {
           Box(contentAlignment = Alignment.Center) {
             Icon(
@@ -394,6 +398,19 @@ fun AudioPreviewWaveformCard(
               cornerRadius = CornerRadius(4f, 4f),
             )
           }
+        }
+      }
+
+      if (onTestAlarmService != null) {
+        Spacer(modifier = Modifier.height(12.dp))
+        OutlinedButton(
+          onClick = onTestAlarmService,
+          shape = RoundedCornerShape(12.dp),
+          modifier = Modifier
+            .fillMaxWidth()
+            .testTag("test_adhan_service_button"),
+        ) {
+          Text("اختبار الأذان مع الإشعار (تشغيل بالخلفية)")
         }
       }
     }

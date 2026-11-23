@@ -1,14 +1,18 @@
 package com.example.service
 
 import android.app.Service
+import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
+import android.os.PowerManager
 import com.example.domain.model.MuezzinVoice
 import com.example.domain.model.NotificationMode
 
 class AdhanPlaybackService : Service() {
+
+  private var wakeLock: PowerManager.WakeLock? = null
 
   override fun onBind(intent: Intent?): IBinder? = null
 
@@ -16,6 +20,7 @@ class AdhanPlaybackService : Service() {
     when (intent?.action) {
       ACTION_STOP_ADHAN -> {
         AdhanAudioController.stop()
+        releaseWakeLock()
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
         return START_NOT_STICKY
@@ -26,6 +31,8 @@ class AdhanPlaybackService : Service() {
         val mode = NotificationMode.fromId(intent.getStringExtra(EXTRA_MODE_ID) ?: "")
         val voice = MuezzinVoice.fromId(intent.getStringExtra(EXTRA_VOICE_ID) ?: "")
         val customUri = intent.getStringExtra(EXTRA_CUSTOM_URI)
+
+        acquireWakeLock()
 
         val notification = NotificationHelper.buildAdhanForegroundNotification(
           context = this,
@@ -50,7 +57,9 @@ class AdhanPlaybackService : Service() {
           voice = voice,
           customAudioUri = customUri,
           isPreview = false,
+          fromService = true,
           onCompleted = {
+            releaseWakeLock()
             stopForeground(STOP_FOREGROUND_REMOVE)
             stopSelf()
           },
@@ -60,8 +69,27 @@ class AdhanPlaybackService : Service() {
     return START_NOT_STICKY
   }
 
+  private fun acquireWakeLock() {
+    releaseWakeLock()
+    runCatching {
+      val pm = getSystemService(Context.POWER_SERVICE) as? PowerManager
+      wakeLock = pm?.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "Athan:AdhanServiceLock")?.apply {
+        setReferenceCounted(false)
+        acquire(4 * 60_000L)
+      }
+    }
+  }
+
+  private fun releaseWakeLock() {
+    runCatching {
+      wakeLock?.let { if (it.isHeld) it.release() }
+    }
+    wakeLock = null
+  }
+
   override fun onDestroy() {
     AdhanAudioController.stop()
+    releaseWakeLock()
     super.onDestroy()
   }
 
