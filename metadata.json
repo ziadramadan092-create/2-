@@ -1,0 +1,6 @@
+{
+  "name": "الأذان",
+  "description": "تطبيق مواقيت الصلاة والأذان والقبلة والأذكار دون اتصال بالإنترنت",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

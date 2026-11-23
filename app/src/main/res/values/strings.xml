@@ -1,0 +1,13 @@
+<resources>
+    <string name="app_name">الأذان</string>
+    <string name="nav_home">الرئيسية</string>
+    <string name="nav_qibla">القبلة</string>
+    <string name="nav_adhkar">الأذكار</string>
+    <string name="nav_settings">الإعدادات</string>
+    <string name="stop_adhan_now">إيقاف الأذان فوراً</string>
+    <string name="adhan_playing_title">حان الآن موعد الأذان</string>
+    <string name="adhan_channel_name">تنبيهات الأذان</string>
+    <string name="adhan_channel_desc">إشعارات دخول وقت الصلاة وتشغيل الأذان</string>
+    <string name="reminder_channel_name">تنبيهات الصلاة</string>
+    <string name="reminder_channel_desc">إشعارات صامتة أو باهتزاز لدخول وقت الصلاة</string>
+</resources>
