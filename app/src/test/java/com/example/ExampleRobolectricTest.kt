@@ -35,7 +35,7 @@ class ExampleRobolectricTest {
   fun `read app name from context`() {
     val context = ApplicationProvider.getApplicationContext<Context>()
     val appName = context.getString(R.string.app_name)
-    assertEquals("الأذان", appName)
+    assertEquals("مؤذّن (Muazzin)", appName)
   }
 
   @Test
@@ -45,6 +45,8 @@ class ExampleRobolectricTest {
       R.raw.adhan_makkah,
       R.raw.adhan_madinah,
       R.raw.adhan_egypt,
+      R.raw.adhan_naqshbandi,
+      R.raw.adhan_harak,
       R.raw.takbir_short,
     )
     rawIds.forEach { resId ->

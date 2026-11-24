@@ -149,7 +149,9 @@ enum class MuezzinVoice(
 ) {
   MAKKAH("makkah", "أذان الحرم المكي", "مقام الحجاز الهادئ", R.raw.adhan_makkah),
   MADINAH("madinah", "أذان المسجد النبوي", "مقام البياتي", R.raw.adhan_madinah),
-  EGYPT("egypt", "الأذان المصري", "مقام الصبا والرست", R.raw.adhan_egypt),
+  EGYPT("egypt", "أذان القاهرة المصري", "الأذان المصري الكلاسيكي", R.raw.adhan_egypt),
+  EGYPT_NAQSHBANDI("egypt_naqshbandi", "أذان الشيخ سيد النقشبندي", "الأذان المصري الخاشع", R.raw.adhan_naqshbandi),
+  EGYPT_HARAK("egypt_harak", "أذان الشيخ عبد الناصر حرك", "الأذان المصري الأصيل", R.raw.adhan_harak),
   CUSTOM("custom", "ملف صوتي مخصص", "من ذاكرة الهاتف", null);
 
   companion object {
